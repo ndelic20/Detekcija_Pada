@@ -1,0 +1,19 @@
+{
+	"folders": [
+		{
+			"name": "Detekcija_Pada",
+			"path": ".."
+		}
+	],
+	"settings": {
+		"sshfs.configs": [
+			{
+				"name": "vjezbe",
+				"root": "/var/www/OWT/2023/vjezbe/ndelic20",
+				"host": "spider.foi.hr",
+				"username": "ndelic20",
+				"password": true
+			}
+		]
+	}
+}
