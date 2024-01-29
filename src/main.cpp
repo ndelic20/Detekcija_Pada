@@ -1,7 +1,63 @@
 #include <Arduino.h>
 #include "SparkFun_MMA8452Q.h"
+#include <azure_ca.h>
+#include <WiFiClientSecure.h>
+#include <logger.h>
+#include <az_core.h>
+#include <az_iot.h>
+
 
 MMA8452Q accel;
+WiFiClientSecure wifiClient;
+
+void connectToWiFi(){
+Serial.println("Connecting to WIFI SSID " + String("Tele2 Pokucni Internet-F378"));
+wifiClient.setCACert((const char*)ca_pem);
+WiFi.mode(WIFI_STA);
+WiFi.begin("Tele2 Pokucni Internet-F378", "28YG40FYFML");
+short timeoutCounter = 0;
+while (WiFi.status() != WL_CONNECTED)
+{
+Serial.print(".");
+delay(500);
+timeoutCounter++;
+if (timeoutCounter >= 20)
+ESP.restart();
+}
+Serial.println("WiFi connected, IP address: " + WiFi.localIP().toString());
+}
+
+bool initIoTHub() {
+az_iot_hub_client_options options = az_iot_hub_client_options_default();
+options.user_agent = AZ_SPAN_FROM_STR(AZURE_SDK_CLIENT_USER_AGENT);
+if (az_result_failed(az_iot_hub_client_init(
+&client,
+az_span_create((uint8_t *)host, strlen(host)),
+az_span_create((uint8_t *)deviceId, strlen(deviceId)),
+&options)))
+{
+Logger.Error("Failed initializing Azure IoT Hub client");
+return false;
+}
+size_t client_id_length;
+if (az_result_failed(az_iot_hub_client_get_client_id(
+&client, mqttClientId, sizeof(mqttClientId) - 1, &client_id_length)))
+{
+Logger.Error("Failed getting client id");
+return false;
+}
+size_t mqttUsernameSize;
+if (az_result_failed(az_iot_hub_client_get_user_name(
+&client, mqttUsername, sizeof(mqttUsername), &mqttUsernameSize)))
+{
+Logger.Error("Failed to get MQTT username ");
+return false;
+}
+Logger.Info("Client ID: " + String(mqttClientId));
+Logger.Info("Username: " + String(mqttUsername));
+return true;
+}
+
 
 const int numReadings = 10;
 float xReadings[numReadings];
@@ -14,6 +70,9 @@ bool detectFall();
 
 void setup() {
   Serial.begin(115200);
+  connectToWiFi();
+/*initializeTime();
+if (initIoTHub()) connectMQTT();*/
   Serial.println("Fall Detection Test Code!");
   Wire.begin();
 
@@ -49,9 +108,9 @@ void loop() {
 
 bool detectFall() {
   
-  float yThreshold = 0.1; 
-  float xThreshold = 0.1; 
-  float zThreshold = 0.1; 
+  float yThreshold = 0.05; 
+  float xThreshold = 0.05; 
+  float zThreshold = 0.05; 
 
   
   float deltaY = yReadings[readingIndex] - yReadings[(readingIndex + numReadings - 1) % numReadings];
@@ -64,3 +123,6 @@ bool detectFall() {
          ((zReadings[readingIndex] < 0 && zReadings[(readingIndex + numReadings - 1) % numReadings] >= 0) ||
           (zReadings[readingIndex] > 0 && zReadings[(readingIndex + numReadings - 1) % numReadings] <= 0));
 }
+
+
+
