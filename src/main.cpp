@@ -147,7 +147,10 @@ String getTelemetryData() { // Get the data and pack it in a JSON message
 
 
 
-	doc["DeviceID"] = (String)deviceId;
+	doc["DeviceId"] = (String)deviceId;
+  doc["AccelerationX"] = accel.getCalculatedX();
+  doc["AccelerationY"] = accel.getCalculatedY();
+  doc["AccelerationZ"] = accel.getCalculatedZ();
 
 	serializeJson(doc, output);
 
@@ -238,7 +241,6 @@ void setup() {
   Serial.begin(115200);
   setupWiFi();
   initializeTime();
-  Serial.println("Fall Detection Test Code!");
   Wire.begin();
 
   if (accel.begin() == false) {
